@@ -1,4 +1,8 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 # Copyright (c) 2013 Alon Swartz <alon@turnkeylinux.org>
 #
 # This file is part of ec2metadata.
@@ -9,7 +13,7 @@ from __future__ import print_function
 # option) any later version.
 #
 import time
-import urllib
+from urllib import request
 import socket
 
 METAOPTS = ['ami-id', 'ami-launch-index', 'ami-manifest-path',
@@ -19,10 +23,12 @@ METAOPTS = ['ami-id', 'ami-launch-index', 'ami-manifest-path',
             'public-keys', 'ramdisk-id', 'reservation-id', 'security-groups',
             'user-data']
 
+
 class Error(Exception):
     pass
 
-class EC2Metadata:
+
+class EC2Metadata(object):
     """Class for querying metadata from EC2"""
 
     def __init__(self, addr='169.254.169.254', api='2008-02-01'):
@@ -40,14 +46,14 @@ class EC2Metadata:
                 s.connect((addr, port))
                 s.close()
                 return True
-            except socket.error as e:
+            except socket.error:
                 time.sleep(1)
 
         return False
 
     def _get(self, uri):
         url = 'http://%s/%s/%s' % (self.addr, self.api, uri)
-        value = urllib.urlopen(url).read()
+        value = request.urlopen(url).read()
         if "404 - Not Found" in value:
             return None
 
@@ -68,7 +74,7 @@ class EC2Metadata:
             if not data:
                 return public_keys
 
-            keyids = [ line.split('=')[0] for line in data.splitlines() ]
+            keyids = [line.split('=')[0] for line in data.splitlines()]
             for keyid in keyids:
                 uri = 'meta-data/public-keys/%d/openssh-key' % int(keyid)
                 public_keys.append(self._get(uri).rstrip())
@@ -80,11 +86,13 @@ class EC2Metadata:
 
         return self._get('meta-data/' + metaopt)
 
+
 def get(metaopt):
     """primitive: return value of metaopt"""
 
     m = EC2Metadata()
     return m.get(metaopt)
+
 
 def display(metaopts, prefix=False):
     """primitive: display metaopts (list) values with optional prefix"""
